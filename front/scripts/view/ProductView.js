@@ -19,4 +19,6 @@ class ProductView{
             choiceOfColor.innerHTML += `<option value = ${kanapInfos.colors[i]}>${kanapInfos.colors[i]}</option>`
         }
     }
+
+
 }
