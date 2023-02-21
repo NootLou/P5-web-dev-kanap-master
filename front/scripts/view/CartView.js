@@ -1,32 +1,20 @@
 class CartView{
+    //on déclare une fonction qui affiche les produits ajoutés au L.S sur la page Panier
+    //Elle prend comme paramètre les données des produits dans le L.S
     displayData(cartItemsInfos){
-        // //On déclare une variable contenant le L.S, que l'on converti en objet grâce à JSON.parse()
-        let localStorageContent = JSON.parse(localStorage.getItem('cart'));
-        //On déclare une variable contenant l'emplacement où l'on doit afficher les items du panier
+        this.cartItemsInfos = cartItemsInfos;
+        console.log('this.cartItemsInfos ', this.cartItemsInfos)
         let cartItemsDiv = document.getElementById('cart__items')
-        //on déclare une variable =0 qui contiendra plus tard la somme de tous les produits du panier
-        let sumOfAllItems = 0;
-        let numberOfItems = 0;
-        //on initie une boucle for ou i=0 , i< que le nb de canap dans le L.S, i++
-        if (localStorageContent == null || localStorageContent.length == 0){
-            //on déclare une variable contenant l'emplacement du titre de la page
+        if (cartItemsInfos == null || cartItemsInfos.length == 0){
             let cartTitle = document.querySelector('#cartAndFormContainer h1')
             console.log('cartTitle : ', cartTitle.textContent)
-            //On modifie le contenu du texte du titre de la page en ajoutant à la fin 'est vide.' / ('Votre panier' + ' est vide.')
             cartTitle.textContent += ' est vide.'
             console.log('new cartTitle : ', cartTitle.textContent)
             return
         } else {
             for (let i=0; i<cartItemsInfos.length; i++){
-                //on déclare une variable contenant la somme total du nombre de même canap sélectionné (PAS LA SOMME DE TOUS LES DIFFERENDS CANAPE)
-                let sumOfOneCanap = cartItemsInfos[i].quantity * cartItemsInfos[i].price;
-                //pour chaque itération on ajoute la somme de tous les canapé de même id et même couleur à la somme de tous les produits du panier
-                sumOfAllItems = sumOfAllItems + sumOfOneCanap;
-                // pour chaque itération on ajoute le nombre d'article à la variable contenant le nombre total de tous les article
-                numberOfItems = numberOfItems + cartItemsInfos[i].quantity;
-                //Pour chaque canapé du L.S, on créer son html/css en utilisant les données reçues de l'API
                 cartItemsDiv.innerHTML += `
-                    <article class="cart__item" data-id=${cartItemsInfos[i].id} data-color=${cartItemsInfos[i].color}>
+                    <article class="cart__item" data-id=${cartItemsInfos[i]._id} data-color=${cartItemsInfos[i].color}>
                         <div class="cart__item__img">
                             <img src=${cartItemsInfos[i].image} alt=${cartItemsInfos[i].altTxt}>
                         </div>
@@ -34,7 +22,7 @@ class CartView{
                             <div class="cart__item__content__description">
                                 <h2>${cartItemsInfos[i].name}</h2>
                                 <p>${cartItemsInfos[i].color}</p>
-                                <p>${sumOfOneCanap} (${cartItemsInfos[i].quantity}x${cartItemsInfos[i].price})</p>
+                                <p id="price">${cartItemsInfos[i].price} €</p>
                             </div>
                             <div class="cart__item__content__settings">
                                 <div class="cart__item__content__settings__quantity">
@@ -49,15 +37,72 @@ class CartView{
                     </article>
                 `;
             }
-            //on déclare une variable contenant l'emplacement du prix total de tous les produits du panier
-            let sumOfAllItemsDiv = document.querySelector("#totalPrice");
-            //Puis on injecte la somme totale de tous les produits dans le html
-            sumOfAllItemsDiv.innerHTML = sumOfAllItems;
-            console.log('sumOfAllItems : ', sumOfAllItems)
-            //on déclare une variable contenant l'emplacement du nombre total d'articles dans le panier
-            let numberOfItemsDiv = document.querySelector("#totalQuantity");
-            //puis on injecte le nombre total d'articles
-            numberOfItemsDiv.innerHTML = numberOfItems;
+        }
+    }
+
+
+    //On déclare une fonction qui affiche sur la page Panier le prix total et le nombre d'article ajoutés
+    displayTotalPrice(){
+        let itemsPriceArray = document.querySelectorAll('#price');
+        let itemsQuantityArray = document.querySelectorAll(".itemQuantity");
+        console.log('itemsPriceArray', itemsPriceArray, 'itemsQuantityArray', itemsQuantityArray);
+        let totalItems = 0;
+        let totalPrice = 0;
+        for(let i=0; i<itemsQuantityArray.length; i++){
+            totalItems = totalItems + parseInt(itemsQuantityArray[i].value);
+            console.log('totalItems : ', totalItems)
+            let oneItemSum = parseInt(itemsQuantityArray[i].value) * parseInt(itemsPriceArray[i].innerText)
+            console.log('oneItemSum : ', oneItemSum)
+            totalPrice = totalPrice + oneItemSum
+            console.log('totalPrice : ', totalItems)
+        }
+        let totalPriceDiv = document.querySelector("#totalPrice");
+        totalPriceDiv.innerHTML = totalPrice;
+        let totalQuantity = document.querySelector("#totalQuantity");
+        totalQuantity.innerHTML = totalItems
+    }
+
+    //On déclare une fonction qui écoute l'input de changement de quantité des produits du panier
+    //Cette fonction créer un objet qui contient les données de l'item modifié puis 
+    //fait appel à la fonction chageQuantity du Controller qui enregistre les nouvelles données dans le L.S
+    listenQuantityInput(){
+        let quantityInputButtonList = document.querySelectorAll('.cart__item__content__settings__quantity > input')
+        console.log('liste des quantity input : ', quantityInputButtonList)
+        for  (let i=0; i<quantityInputButtonList.length; i++){
+            let inputButton = quantityInputButtonList[i];
+            console.log('inputButton[i] : ', inputButton)
+            let itemArticle = inputButton.closest('article');
+            console.log('itemArticle datas', itemArticle) 
+            inputButton.addEventListener('change', (event)=>{
+                let newOptionsProduct = {
+                    _id : itemArticle.dataset.id,
+                    newQuantity : parseInt(event.target.value),
+                    color : itemArticle.dataset.color,
+                }
+                console.log(`la nouvelle quantité dans newQuantity de l'article ${i+1} est : `, newOptionsProduct);
+                controller.changeQuantity(newOptionsProduct);
+                this.displayTotalPrice();
+            })
+        }
+    }
+
+    //On déclare une fonctio qui écoute le bouton de suppression des produits du panier
+    //cette fonction créer un objet avec les données de l'item à supprimer puis
+    //fait appel à la fonction deleteItem du Controller qui permet de supprimer un produit dans le L.S
+    listenDeleteInput(){
+        let deleteDivList = document.querySelectorAll('.deleteItem');
+        console.log('deleteDivList', deleteDivList)
+        for (let i=0; i<deleteDivList.length; i++){
+            let deleteDiv = deleteDivList[i];
+            let deleteArticle = deleteDiv.closest('article');
+            deleteDiv.addEventListener('click', (event) =>{
+                let itemData = {
+                    _id : deleteArticle.dataset.id, 
+                    color : deleteArticle.dataset.color,
+                }
+                console.log('itemsData to delete : ', itemData)
+                controller.deleteItem(itemData);
+            })
         }
     }
 }

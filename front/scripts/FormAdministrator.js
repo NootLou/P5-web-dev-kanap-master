@@ -1,98 +1,72 @@
 class FormAdministrator{
-    textTest(text, input){
-        let textRegExp = new RegExp("^[a-zA-Z0-9' .-]{1,}");
-        if(!textRegExp.test(text)){
-            this.getErrorMessage(input);
-        }
+    //On déclare une fonction qui retournera true ou false si le champs est bien/mal renseigné
+    //la fonction prend en parametre le texte renseigné dans le formulaire
+    checkTextField(text){
+        let textRegExp = /^[a-zA-Z- ']+$/;
+        console.log(textRegExp.test(text))
+        return textRegExp.test(text);
+    }
+    //on creer une fonction check pour chaque regex nécessaire au formulaire (ici text, adress, email)
+
+    checkAddressField(address){
+        let addressRegExp = /^[\w\u00C0-\u017F- ']+$/;
+        console.log(addressRegExp.test(address));
+        return addressRegExp.test(address);
     }
     
-    emailTest(email){
-        let emailRegExp = new RegExp("^[a-zA-Z0-9]+@[a-zA-Z]+.[a-z]{2,3}");
-        if(!emailRegExp.test(email)){
-            this.getErrorMessage(document.getElementById('emailErrorMsg'));
-        }
+    checkEmailField(email){
+        let emailRegExp = /[a-zA-Z0-9]+@[a-zA-Z]+\.[a-z]{2,3}/;
+        console.log(emailRegExp.test(email))
+        return emailRegExp.test(email); 
     }
     
-    
-    getErrorMessage(errorDiv){
-        let errorMessage = errorDiv;
-        if(errorDiv.closest("input") == document.getElementById('firstName')){
-            errorMessage.innerText = 'Veuillez saisir un Prénom valide'
+    //on déclare une fonction qui affichera ou non un message d'erreur en fonction de la validité du champs renseigné
+    //la fonction prend 3 paramètres : le champs , la validité de la réponse (true/false), le message à afficher
+    manageErrorMessage(inputTarget, isValid, message){
+        let container = inputTarget.closest("div");
+        let errorTag = container.querySelector('p');
+        if (isValid){
+            errorTag.innerText = '';
         } else {
-            if (errorDiv.closest("input") == document.getElementById('lastName')){
-                errorMessage.innerText = 'Veuillez saisir un Nom valide'
-            } else {
-                if ( errorDiv.closest("input") == document.getElementById('address')){
-                    errorMessage.innerText = 'Veuillez saisir une adresse valide'
-                } else {
-                    if ( errorDiv.closest("input") == document.getElementById('city')){
-                        errorMessage.innerText = 'Veuillez saisir une ville valide'
-                    } else {
-                        if ( errorDiv.closest("input") == document.getElementById('email')){
-                            errorMessage.innerText = 'Veuillez saisir une adresse email valide'
-                        }
-                    }
-                }
-            }
+            errorTag.innerText = message;
         }
     }
 
-    getFormData(){
-        // on déclare une variable qui contient l'emplacement du formulaire complet
+    //on déclare une fonction qui teste la validité des informations renseignées dans le formulaire 
+    //et afficher un message d'erreur si necessaire
+    checkFormData(){
         let formDiv = document.querySelector('form');
         console.log('formDiv : ', formDiv);
-
         let inputFirstName = formDiv.firstName;
         let inputLastName = formDiv.lastName;
         let inputAddress = formDiv.address;
         let inputCity = formDiv.city;
         let inputEmail = formDiv.email;
-        let buttonSubmit = formDiv.order;
-
-        let clientDataObjet = {
-            firstName : inputFirstName.value,
-            lastName : inputLastName.value,
-            address : inputAddress.value,
-            city : inputCity.value,
-            email : inputEmail.value,
-        }
-        console.log('clientDataObjet : ', clientDataObjet)
 
         inputFirstName.addEventListener('change', (event) =>{
-            let inputValue = event.target.value;
-            this.textTest(inputValue, inputFirstName);
+            let isValid = this.checkTextField(event.target.value);
+            this.manageErrorMessage(event.target, isValid,'Veuillez renseigner un nom valide');
         })
 
         inputLastName.addEventListener('change', (event) =>{
-            let inputValue = event.target.value;
-            this.textTest(inputValue, inputLastName);
+            let isValid = this.checkTextField(event.target.value);
+            this.manageErrorMessage(event.target, isValid,'Veuillez renseigner un nom valide');
         })
 
         inputAddress.addEventListener('change', (event) =>{
-            let inputValue = event.target.value;
-            this.textTest(inputValue, inputAddress);
+            let isValid = this.checkAddressField(event.target.value);
+            this.manageErrorMessage(event.target, isValid, "Veuiller renseigner une adresse valide");
         })
 
         inputCity.addEventListener('change', (event) =>{
-            let inputValue = event.target.value;
-            this.textTest(inputValue, inputCity);
+            let isValid = this.checkAddressField(event.target.value);
+            this.manageErrorMessage(event.target, isValid, "Veuiller renseigner une ville valide");
         })
 
         inputEmail.addEventListener('change', (event) =>{
-            let inputValue = event.target.value;
-            this.emailTest(inputValue);
+            let isValid = this.checkEmailField(event.target.value);
+            this.manageErrorMessage(event.target, isValid, "Veuiller renseigner une adresse email valide")
         })
-
-        buttonSubmit.addEventListener('submit', (event) => {
-            event.preventDefault();
-            if (clientDataObjet.firstName == '' | clientDataObjet.lastName == '' | clientDataObjet.address == '' | clientDataObjet.city == '' | clientDataObjet.email == ''){
-                alert('Veuillez remplir le formulaire')
-            }else {
-                localStorage.setItem('clientFormData', JSON.stringify(clientDataObjet));
-                console.log('clientForm L.S : ', JSON.parse(localStorage.getItem('clientFormData')));
-            }
-            return JSON.parse(localStorage.getItem('clientFormData'));
-        }) 
         
     }
 }

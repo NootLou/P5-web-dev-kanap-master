@@ -1,51 +1,96 @@
 class Controller{
-    //on déclare une fonction asynchrone qui nous permettra d'afficher les produits de la page d'accueil avec les données reçues de l'API
+    //on déclare une fonction asynchrone qui nous permettra d'afficher les produits de la page d'accueil 
+    //avec les données reçues de l'API
     async displayAccueil(){
-        //on déclare une variable qui contient une instance de la classe Model
         let model = new Model;
-        //on déclare une variable qui contient le résulat de la promise de model.getData()
         let json = await model.getData("http://localhost:3000/api/products");
         console.log('response JSON : ', json);
-        //on déclare une variable qui contient une instance de la classe AccueilView
         let accueilView = new AccueilView;
-        //on execute la fonction accueilView.displayData avec comme argument la variable json qui contient les données de l'API
         accueilView.displayData(json);
     }
-    //on déclare une fonction asynchrone qui nous permettra d'afficher la page produit, avec le canapé sélectionné
+    //on déclare une fonction asynchrone qui nous permettra d'afficher la page produit, 
+    //avec le canapé sélectionné
     async displayProductPage(){
-        //on déclare une variable qui contient une instance de la classe Model
         let model = new Model;
-        //on déclare une variable qui contient le résultat de la promise de model.getProductData()
-        let json = await model.getProductPageData("http://localhost:3000/api/products/");
-        console.log(json);
-        //on déclare une variable qui contient une instance de la classe ProductView
+        let canapInfos = await model.getProductPageData("http://localhost:3000/api/products/");
+        console.log('canapInfos', canapInfos);
         let productView = new ProductView;
-        //on execute la fonction productView.displayData avec pour argument la variable json qui contient les données de l'API
-        productView.displayData(json);
-        //on execute la fonction  addToCartButton avec pour argument la variable json qui contient les données du produit sélectionné sur la page d'accueil
-        model.addToCartButton(json);
+        productView.displayData(canapInfos);
+        //on éxecute la fonction d'écoute du bouton d'ajout au panier
+        productView.listenProductOptions();
+    }
+    
+    //on déclare une fonction qui permet d'ajouter un produit dans le L.S
+    addToCart(productOptions){
+        let model= new Model;
+        model.addToCart(productOptions);
     }
 
-    //On déclare une fonction async qui nous permettra d'afficher la page Panier
+    //On déclare une fonction async qui permet d'afficher les produits du panier ainsi que le prix et le nombre d'articles dans le panier
+    //Cette fonction permet également de vérifier les données du formulaire avant de les envoyer à l'API
+    //Enfin cette fonction redirige vers la page confirmation une fois la réponse de l'API reçue.
     async displayCartPage(){
-        //on déclare une variable qui contient une instance de la classe Model
         let model = new Model;
-        //on déclare une variable qui contient le résultat de la promise de model.getAllCartItemsData
-        //Le résultat contient un tableau avec les infos de chaque produit dans le L.S
         let cartItemsInfos = await model.getAllCartItemsData();
-        //on déclare une variable qui contient une instance de la classe CartView
         let cartView = new CartView;
-        //on execute la fonction displayData de l'instance de la classe CartView
-        //Cette fonction permet d'afficher les infos de chaque produit du L.S sur la page panier
         cartView.displayData(cartItemsInfos);
-        //On execute la fonction quantityInputButton() qui permet de modifier la quantité des produits dans le panier
-        //directement depuis la page Panier
-        model.quantityInputButton();
-        //On execute la fonction deleteButton() qui permet de supprimer un item du panier depuis la page panier.
-        model.deleteButton(); 
-        // model.getFormData();
+        cartView.displayTotalPrice();
+        cartView.listenQuantityInput();
+        cartView.listenDeleteInput();
         let formAdministrator = new FormAdministrator;
-        formAdministrator.getFormData();
+        formAdministrator.checkFormData();
+        let formDiv = document.querySelector('form');
+        let formErrorMessages = document.querySelectorAll('form p');
+        console.log('formErrorMeggages', formErrorMessages)
+        formDiv.order.addEventListener('click', async(event) =>{
+            event.preventDefault();
+            formAdministrator.checkFormData(); 
+            if(formErrorMessages[0].innerText !== '' || formErrorMessages[1].innerText !== '' || formErrorMessages[2].innerText !== '' || formErrorMessages[3].innerText !== '' || formErrorMessages[4].innerText !== ''){
+                //on empêche le déclement de l'évènement du bouton et on affiche un message d'erreur
+                event.preventDefault();
+                alert('Veuillez remplir le formulaire avec des données valides')
+            }else if(model.getCart() == [] || model.getCart() == null){
+                event.preventDefault();
+                alert('Votre panier est vide.');
+            }else{
+                let orderData = {
+                    contact : {
+                        firstName : formDiv.firstName.value,
+                        lastName : formDiv.lastName.value,
+                        address : formDiv.address.value,
+                        city : formDiv.city.value,
+                        email : formDiv.email.value
+                    },
+                    products : model.getCartItemId()
+                }
+                console.log('orderData : ', orderData)
+                let orderConfirm = await model.getOrderConfirm("http://localhost:3000/api/products/order", orderData);
+                console.log('orderConfirm.id', orderConfirm.orderId);
+                localStorage.clear();
+                window.location.href = `../html/confirmation.html?id=${orderConfirm.orderId}`;
+            }
+        })
+    }
+
+    //On déclare une fonction qui permet de changer la quantité d'un produit dans le L.S
+    changeQuantity(newItemQuantity){
+        let model= new Model;
+        model.changeProductQuantity(newItemQuantity);
+    }
+
+    //On déclare une fonction qui permet de supprimer un produit dans le L.S
+    deleteItem(itemData){
+        let model= new Model;
+        model.deleteItemFromCart(itemData);
+    }
+
+    //on déclare une fonction qui permet d'afficher la page de confirmation avec le numéro de commande
+    displayConfirmationView(){
+        let model = new Model;
+        let orderId = model.getUrlId();
+        console.log('UrlId : ', orderId);
+        let confirmationView = new ConfirmationView;
+        confirmationView.displayData(orderId);
     }
 }
 
